@@ -1,0 +1,34 @@
+🗃️ Create Database and Schemas
+🎯 Script Purpose
+
+This script creates a new database named sales_performance after checking whether it already exists.
+If the database exists, it will be dropped and recreated.
+
+Additionally, the script sets up three schemas within the database:
+
+bronze – Raw/staging layer for ingested data.
+
+silver – Cleaned and transformed data.
+
+gold – Aggregated, analytics-ready data.
+
+⚠️ Warning
+
+Running this script will drop the entire sales_performance database if it already exists.
+All data within the database will be permanently deleted.
+
+⚡ Proceed with caution and ensure you have proper backups before running this script.
+
+-- Drop the database if it already exists
+DROP DATABASE IF EXISTS sales_performance;
+
+-- Create a new database
+CREATE DATABASE sales_performance;
+
+-- Use the newly created database
+USE sales_performance;
+
+-- Instead of schemas, use schema-like naming conventions
+CREATE SCHEMA bronze;
+CREATE SCHEMA silver;
+CREATE SCHEMA gold;
