@@ -1,0 +1,99 @@
+-- =====================================================================
+-- Script Name   : create_bronze_tables
+-- Database      : sales_performance
+-- Layer         : Bronze (Raw Data Layer)
+-- ---------------------------------------------------------------------
+-- Purpose:
+-- The Bronze Layer serves as the foundational data ingestion layer within
+-- the data warehouse architecture. It is designed to capture and store
+-- raw, unprocessed data directly from the source systems (CRM & ERP)
+-- in its native format, preserving data fidelity and ensuring traceability.
+--
+-- Key Objectives:
+-- 1. Provide a secure, centralized repository for raw data ingestion.
+-- 2. Maintain full historical and structural integrity of the source systems.
+-- 3. Enable auditability by retaining source data before transformation.
+-- 4. Serve as the source for the Silver Layer (data cleansing and integration).
+--
+-- Notes:
+-- • Data in this layer is stored exactly as received—no cleaning, enrichment,
+--   or transformation is applied.
+-- • Naming convention: bronze_<source>_<table_name>
+-- • Recommended to keep raw tables read-only, ensuring data lineage and
+--   reproducibility for downstream analytics.
+--
+-- Caution:
+-- This layer may contain sensitive or unvalidated information. Handle with care
+-- and apply proper access control before exposing data to other environments.
+-- =====================================================================
+
+
+USE sales_performance;
+
+-- ======================================================
+-- 1️⃣ CRM Customer Information (Raw Data)
+-- ======================================================
+CREATE TABLE sales_performance.bronze_crm_cust_info (
+    cst_id INT,
+    cst_key VARCHAR(50),
+    cst_firstname VARCHAR(50),
+    cst_lastname VARCHAR(50),
+    cst_material_status VARCHAR(50),
+    cst_gndr VARCHAR(50),
+    cst_create_date DATE
+);
+
+-- ======================================================
+-- 2️⃣ CRM Product Information (Raw Data)
+-- ======================================================
+CREATE TABLE sales_performance.bronze_crm_prd_info (
+    prd_id INT,
+    prd_key VARCHAR(50),
+    prd_nm VARCHAR(50),
+    prd_cost INT,
+    prd_line VARCHAR(50),
+    prd_start_dt DATETIME,
+    prd_end_dt DATETIME
+);
+
+-- ======================================================
+-- 3️⃣ CRM Sales Information (Raw Data)
+-- ======================================================
+CREATE TABLE sales_performance.bronze_crm_sales_info (
+    sls_ord_num VARCHAR(50),
+    sls_prd_key VARCHAR(50),
+    sls_cust_id INT,
+    sls_order_dt DATE,
+    sls_ship_dt DATE,
+    sls_due_dt DATE,
+    sls_sales INT,
+    sls_quantity INT,
+    sls_price INT
+);
+
+-- ======================================================
+-- 4️⃣ ERP Location Data (Raw Data)
+-- ======================================================
+CREATE TABLE sales_performance.bronze_erp_loc_a101 (
+    cid VARCHAR(50),
+    cntry VARCHAR(50)
+);
+
+-- ======================================================
+-- 5️⃣ ERP Customer Data (Raw Data)
+-- ======================================================
+CREATE TABLE sales_performance.bronze_erp_cust_az12 (
+    cid VARCHAR(50),
+    bdate DATE,
+    gen VARCHAR(50)
+);
+
+-- ======================================================
+-- 6️⃣ ERP Product Category Data (Raw Data)
+-- ======================================================
+CREATE TABLE sales_performance.bronze_erp_px_cat_g1v2 (
+    id VARCHAR(50),
+    cat VARCHAR(50),
+    subcat VARCHAR(50),
+    maintenance VARCHAR(50)
+);
