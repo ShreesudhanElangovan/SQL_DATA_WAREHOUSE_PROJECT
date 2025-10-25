@@ -1,30 +1,32 @@
 -- =====================================================================
--- Script Name   : create_bronze_tables
+-- Script Name   : create bronze layer (source-->bronze)
 -- Database      : sales_performance
 -- Layer         : Bronze (Raw Data Layer)
 -- ---------------------------------------------------------------------
--- Purpose:
--- The Bronze Layer serves as the foundational data ingestion layer within
--- the data warehouse architecture. It is designed to capture and store
--- raw, unprocessed data directly from the source systems (CRM & ERP)
--- in its native format, preserving data fidelity and ensuring traceability.
+-- Script Purpose:
+-- This stored procedure is responsible for loading raw data into the 
+-- Bronze Layer tables from external CSV files. The Bronze Layer serves 
+-- as the landing zone for raw data extracted from source systems (CRM & ERP).
 --
--- Key Objectives:
--- 1. Provide a secure, centralized repository for raw data ingestion.
--- 2. Maintain full historical and structural integrity of the source systems.
--- 3. Enable auditability by retaining source data before transformation.
--- 4. Serve as the source for the Silver Layer (data cleansing and integration).
+-- The procedure performs the following actions:
+-- 1. Loads fresh data from CSV files into the respective bronze tables using 
+--    the MySQL Data Import Wizard or equivalent bulk-load mechanism.
 --
--- Notes:
--- • Data in this layer is stored exactly as received—no cleaning, enrichment,
---   or transformation is applied.
--- • Naming convention: bronze_<source>_<table_name>
--- • Recommended to keep raw tables read-only, ensuring data lineage and
---   reproducibility for downstream analytics.
+-- Parameters:
+-- • None — This stored procedure does not accept any input parameters 
+--   or return any output values.
+--
+-- Key Notes:
+-- • Designed for initial or periodic full data reloads from source systems.
+-- • Ensures that the Bronze Layer always reflects the latest available raw data.
+-- • This operation is destructive — all existing data in Bronze tables 
+--   will be removed before loading new data.
 --
 -- Caution:
--- This layer may contain sensitive or unvalidated information. Handle with care
--- and apply proper access control before exposing data to other environments.
+-- • Ensure that all CSV files are properly formatted and validated 
+--   before execution.
+-- • This process permanently deletes existing Bronze Layer data.
+--   Proceed only after confirming that data backups or source files are available.
 -- =====================================================================
 
 
