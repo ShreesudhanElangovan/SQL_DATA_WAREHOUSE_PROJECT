@@ -7,7 +7,9 @@ This project demonstrates a comprehensive data warehouse and analytics solution 
 ----------------------------------------------------------------------------------
 
 📋 Project Requirements
+
 🏗️ Building the Data Warehouse
+
 🎯 Objective
 
 Develop a modern data warehouse using MySQL to consolidate sales data, enabling analytical reporting and data-driven decision-making.
