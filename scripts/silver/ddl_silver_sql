@@ -1,11 +1,35 @@
----
-script name ; create silver layer
-database sales performance
-layer silver
----
-script purpose 
-this script  create lables in the silver schma dropping existing tables if then already existing.
-run the script to redefine the ddl structure of bronze table
+-- =====================================================================
+-- Script Name   : create_silver_layer_etl.sql
+-- Database      : sales_performance
+-- Layer         : Silver (Cleansed & Transformed Data Layer)
+-- ---------------------------------------------------------------------
+-- Script Purpose:
+-- This stored procedure performs the ETL (Extract, Transform, Load) process
+-- to populate the Silver Layer tables from the Bronze Layer tables.
+--
+-- The Silver Layer serves as the intermediate data processing zone within
+-- the data warehouse. It contains cleaned, standardized, and enriched data
+-- ready for integration and analytical modeling in the Gold Layer.
+--
+-- Actions Performed:
+-- 1. Truncate all Silver Layer tables before reloading data.
+-- 2. Extract data from Bronze Layer tables.
+-- 3. Apply transformations, standardizations, and data quality rules.
+-- 4. Load transformed data into Silver Layer tables.
+--
+-- Key Notes:
+-- • Each Silver table represents a cleansed version of a corresponding Bronze table.
+-- • Data transformations include trimming, type conversion, standardizing
+--   categorical values, and data validation logic.
+-- • This process is repeatable and designed for incremental or full reloads.
+--
+-- Caution:
+-- • All Silver tables are truncated before loading new data.
+--   Ensure that the Bronze Layer is successfully loaded prior to execution.
+-- =====================================================================
+
+USE sales_performance;
+
 -- ============================================
 -- 1️⃣ CRM CUSTOMER INFO
 -- ============================================
