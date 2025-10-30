@@ -92,7 +92,7 @@ FROM sales_performance.silver_crm_prd_info;
 
 -- Check invalid product date ranges
 SELECT *
-FROM sales_performance.bronze_crm_prd_info
+FROM sales_performance.silver_crm_prd_info
 WHERE prd_end_dt < prd_start_dt;
 
 -- Validate product key sequence
@@ -108,7 +108,7 @@ SELECT
         ),
         INTERVAL 1 DAY
     ) AS prd_end_dt_test
-FROM sales_performance.bronze_crm_prd_info
+FROM sales_performance.silver_crm_prd_info
 WHERE prd_key IN ('AC-HE-HL-U509-R', 'AC-HE-HL-U509');
 
 
@@ -181,12 +181,12 @@ FROM sales_performance.silver_crm_sales_info;
 
 -- Validate and clean customer IDs
 SELECT *
-FROM sales_performance.bronze_erp_cust_az12
+FROM sales_performance.silver_erp_cust_az12
 WHERE cid LIKE 'NAS%';
 
 -- Check for invalid or future birthdates
 SELECT DISTINCT bdate
-FROM sales_performance.bronze_erp_cust_az12
+FROM sales_performance.silver_erp_cust_az12
 WHERE bdate > CURDATE();
 
 -- Standardize gender and date columns
@@ -201,7 +201,7 @@ SELECT
         WHEN UPPER(TRIM(gen)) IN ('M', 'MALE') THEN 'Male'
         ELSE 'n/a'
     END AS gen
-FROM sales_performance.bronze_erp_cust_az12;
+FROM sales_performance.silver_erp_cust_az12;
 
 
 /* ============================================================
@@ -217,11 +217,11 @@ SELECT
         WHEN TRIM(cntry) = '' OR cntry IS NULL THEN 'n/a'
         ELSE cntry
     END AS cntry
-FROM sales_performance.bronze_erp_loc_a101;
+FROM sales_performance.silver_erp_loc_a101;
 
 -- Check distinct country values
 SELECT DISTINCT cntry
-FROM sales_performance.bronze_erp_loc_a101;
+FROM sales_performance.silver_erp_loc_a101;
 
 
 /* ============================================================
@@ -230,11 +230,11 @@ FROM sales_performance.bronze_erp_loc_a101;
 
 -- Identify unwanted spaces and inconsistent text fields
 SELECT *
-FROM sales_performance.bronze_erp_px_cat_g1v2
+FROM sales_performance.silver_erp_px_cat_g1v2
 WHERE cat != TRIM(cat)
    OR subcat != TRIM(subcat)
    OR maintenance != TRIM(maintenance);
 
 -- Review distinct maintenance flags
 SELECT DISTINCT maintenance
-FROM sales_performance.bronze_erp_px_cat_g1v2;
+FROM sales_performance.silver_erp_px_cat_g1v2;
