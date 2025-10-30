@@ -1,0 +1,131 @@
+/* =====================================================================================================
+🎯 PROJECT       : DATA WAREHOUSE QUALITY CHECKS
+🏆  LAYER        : GOLD LAYER (Analytics Layer)
+🗂️  DATABASE     : sales_performance
+📜  PURPOSE      :
+    This script performs **data quality validation checks** for the GOLD Layer of the 
+    `sales_performance` Data Warehouse. It ensures that transformed data in the Gold views 
+    (dim_customer, dim_product, fact_sales) is accurate, complete, and consistent with 
+    the Silver Layer source data.
+
+💡 KEY VALIDATION AREAS:
+    ✅ Duplicate detection in integrated customer data
+    ✅ Data integration logic validation (gender, joins)
+    ✅ Referential integrity between Fact and Dimension tables
+    ✅ Detection of orphan or missing dimension keys
+    ✅ Data consistency between Silver and Gold Layers
+
+⚠️ NOTE:
+    These checks are READ-ONLY and should be used for **data auditing**, **ETL testing**, 
+    and **pipeline monitoring**. No data will be modified.
+===================================================================================================== */
+
+
+/* ============================================================
+   🧩 1️⃣ CUSTOMER INTEGRATION CHECK – DUPLICATE CUSTOMER IDs
+   ============================================================ */
+
+-- Purpose: Verify that customer IDs from Silver Layer integration do not create duplicates.
+-- Expectation: Each `cst_id` should be unique in the integrated dataset.
+
+SELECT 
+    cst_id,
+    COUNT(*) AS duplicate_count
+FROM (
+    SELECT
+        ci.cst_id,
+        ci.cst_key,
+        ci.cst_firstname,
+        ci.cst_lastname,
+        ci.cst_material_status,
+        ci.cst_gndr,
+        ci.cst_create_date,
+        ca.bdate,
+        ca.gen,
+        lo.cntry
+    FROM sales_performance.silver_crm_cust_info ci
+    LEFT JOIN sales_performance.silver_erp_cust_az12 ca
+        ON ci.cst_key = ca.cid
+    LEFT JOIN sales_performance.silver_erp_loc_a101 lo
+        ON ci.cst_key = lo.cid
+) t
+GROUP BY cst_id
+HAVING COUNT(*) > 1;
+
+-- ✅ Expected Result: No rows returned (indicating no duplicate customers).
+
+
+/* ============================================================
+   👩‍💻 2️⃣ DATA INTEGRATION VALIDATION – GENDER MAPPING
+   ============================================================ */
+
+-- Purpose: Validate that gender values from CRM and ERP are properly combined.
+-- Logic: If CRM gender is available (not 'n/a'), use CRM value. Otherwise, fallback to ERP gender.
+
+SELECT
+    ci.cst_gndr AS crm_gender,
+    ca.gen AS erp_gender,
+    CASE 
+        WHEN ci.cst_gndr != 'n/a' THEN ci.cst_gndr
+        ELSE COALESCE(ca.gen, 'n/a')
+    END AS final_gender
+FROM sales_performance.silver_crm_cust_info ci
+LEFT JOIN sales_performance.silver_erp_cust_az12 ca
+    ON ci.cst_key = ca.cid
+LEFT JOIN sales_performance.silver_erp_loc_a101 lo
+    ON ci.cst_key = lo.cid
+ORDER BY 1, 2;
+
+-- ✅ Expected Result:
+-- Gender values should appear as either 'Male', 'Female', or 'n/a' — no unexpected or blank entries.
+
+
+/* ============================================================
+   💰 3️⃣ FACT SALES – PRODUCT AND CUSTOMER KEY VALIDATION
+   ============================================================ */
+
+-- Purpose: Validate that all records in the fact table have valid foreign keys.
+-- This ensures referential integrity between fact_sales and the related dimensions.
+
+CREATE OR REPLACE VIEW gold.fact_sales AS
+SELECT 
+    s.sls_ord_num AS order_number,
+    COALESCE(pr.product_key, NULL) AS product_key,
+    ci.customer_key,
+    s.sls_order_dt AS order_date,
+    s.sls_ship_dt AS shipping_date,
+    s.sls_due_dt AS due_date,
+    s.sls_sales AS sales_amount,
+    s.sls_quantity AS quantity,
+    s.sls_price AS price
+FROM sales_performance.silver_crm_sales_info s
+LEFT JOIN gold.dim_product pr
+    ON s.sls_prd_key = pr.product_number
+LEFT JOIN gold.dim_customer ci
+    ON s.sls_cust_id = ci.customer_id
+WHERE pr.product_key IS NULL;
+
+-- ✅ Expected Result:
+-- No rows returned — all sales records should have a valid product key.
+
+
+/* ============================================================
+   🔍 4️⃣ ORPHAN RECORD CHECK – FACT vs DIMENSION RELATIONSHIP
+   ============================================================ */
+
+-- Purpose: Identify sales fact records that reference non-existent products in dim_product.
+-- These represent potential referential integrity issues.
+
+SELECT DISTINCT f.product_key
+FROM gold.fact_sales f
+LEFT JOIN gold.dim_product p
+    ON f.product_key = p.product_key
+WHERE p.product_key IS NULL;
+
+-- ✅ Expected Result:
+-- No product keys should be NULL or missing in dim_product.
+
+
+/* =====================================================================
+   ✅ END OF GOLD LAYER DATA QUALITY VALIDATION SCRIPT
+   ===================================================================== */
