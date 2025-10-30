@@ -1,18 +1,21 @@
 /* =====================================================================================================
- 🎯 QUALITY CHECKS SILVER LAYER
- 🗂️ DESCRIPTION:
-     This script contains SQL-based data quality validation checks applied across the Silver Layer 
-     of the `sales_performance` data warehouse. 
-     
-     The checks ensure:
+ 🎯 PROJECT       : DATA WAREHOUSE QUALITY CHECKS
+ 🧱  ENVIRONMENT  : MySQL / Data Warehouse - Silver Layer
+ 🗂️  DESCRIPTION  :
+     This script performs a comprehensive series of data quality validation checks across the 
+     **Silver Layer** of the `sales_performance` Data Warehouse. It ensures that all data 
+     loaded from the Bronze Layer meets defined business and data integrity standards before 
+     being consumed by the Gold Layer (analytics layer).
+
+     The quality checks focus on:
        ✅ Referential integrity between fact and dimension tables
        ✅ Data standardization (gender, status, categories, country names)
-       ✅ Removal of duplicates and null keys
-       ✅ Date consistency and logical validation
-       ✅ Formatting and trimming of string fields
-       ✅ Business rule validation for sales and product data
+       ✅ Detection of duplicates and null keys
+       ✅ Validation of date ranges and logical dependencies
+       ✅ Enforcement of formatting and trimming rules for text fields
+       ✅ Business rule validation for sales and product data consistency
 
- 💾 TARGET SCHEMA: sales_performance
+ 💾 TARGET SCHEMA : sales_performance
  📊 VALIDATED TABLES:
        - silver_crm_cust_info
        - silver_crm_prd_info
@@ -20,7 +23,13 @@
        - silver_erp_cust_az12
        - silver_erp_loc_a101
        - silver_erp_px_cat_g1v2
+
+ ⚠️  USAGE NOTES:
+       • This script is **read-only** — it does not modify or update data.
+       • Intended for scheduled data validation and ETL pipeline testing.
+       • Results from these queries can be stored in audit tables or logs for continuous monitoring.
  ===================================================================================================== */
+
 
 /* ============================================================
    🧩 1️⃣ CRM CUSTOMER INFO – Quality Checks
