@@ -1,0 +1,231 @@
+/* =====================================================================================================
+ 🎯 QUALITY CHECKS SILVER LAYER
+ 🗂️ DESCRIPTION:
+     This script contains SQL-based data quality validation checks applied across the Silver Layer 
+     of the `sales_performance` data warehouse. 
+     
+     The checks ensure:
+       ✅ Referential integrity between fact and dimension tables
+       ✅ Data standardization (gender, status, categories, country names)
+       ✅ Removal of duplicates and null keys
+       ✅ Date consistency and logical validation
+       ✅ Formatting and trimming of string fields
+       ✅ Business rule validation for sales and product data
+
+ 💾 TARGET SCHEMA: sales_performance
+ 📊 VALIDATED TABLES:
+       - silver_crm_cust_info
+       - silver_crm_prd_info
+       - silver_crm_sales_info
+       - silver_erp_cust_az12
+       - silver_erp_loc_a101
+       - silver_erp_px_cat_g1v2
+ ===================================================================================================== */
+
+/* ============================================================
+   🧩 1️⃣ CRM CUSTOMER INFO – Quality Checks
+   ============================================================ */
+
+-- Check for null or duplicate primary keys
+SELECT 
+    cst_id,
+    COUNT(*) AS duplicate_count
+FROM sales_performance.silver_crm_cust_info
+GROUP BY cst_id
+HAVING COUNT(*) > 1 OR cst_id IS NULL;
+
+-- Check for unwanted spaces in customer names and gender
+SELECT cst_firstname
+FROM sales_performance.silver_crm_cust_info
+WHERE cst_firstname != TRIM(cst_firstname);
+
+SELECT cst_lastname
+FROM sales_performance.silver_crm_cust_info
+WHERE cst_lastname != TRIM(cst_lastname);
+
+SELECT cst_gndr
+FROM sales_performance.silver_crm_cust_info
+WHERE cst_gndr != TRIM(cst_gndr);
+
+-- Check standardized and consistent data
+SELECT DISTINCT cst_material_status
+FROM sales_performance.silver_crm_cust_info;
+
+SELECT DISTINCT cst_gndr
+FROM sales_performance.silver_crm_cust_info;
+
+
+/* ============================================================
+   🏷️ 2️⃣ CRM PRODUCT INFO – Quality Checks
+   ============================================================ */
+
+-- Check for duplicate or null product IDs
+SELECT 
+    prd_id,
+    COUNT(*) AS duplicate_count
+FROM sales_performance.silver_crm_prd_info
+GROUP BY prd_id
+HAVING COUNT(*) > 1 OR prd_id IS NULL;
+
+-- Check unwanted spaces in product name
+SELECT prd_nm
+FROM sales_performance.silver_crm_prd_info
+WHERE prd_nm != TRIM(prd_nm);
+
+-- Validate cost values
+SELECT prd_cost
+FROM sales_performance.silver_crm_prd_info
+WHERE prd_cost < 0 OR prd_cost IS NULL;
+
+-- Validate product line categories
+SELECT DISTINCT prd_line
+FROM sales_performance.silver_crm_prd_info;
+
+-- Check invalid product date ranges
+SELECT *
+FROM sales_performance.bronze_crm_prd_info
+WHERE prd_end_dt < prd_start_dt;
+
+-- Validate product key sequence
+SELECT
+    prd_id,
+    prd_key,
+    prd_nm,
+    prd_start_dt,
+    prd_end_dt,
+    DATE_SUB(
+        LEAD(prd_start_dt) OVER (
+            PARTITION BY prd_key ORDER BY prd_start_dt
+        ),
+        INTERVAL 1 DAY
+    ) AS prd_end_dt_test
+FROM sales_performance.bronze_crm_prd_info
+WHERE prd_key IN ('AC-HE-HL-U509-R', 'AC-HE-HL-U509');
+
+
+/* ============================================================
+   💰 3️⃣ CRM SALES INFO – Quality Checks
+   ============================================================ */
+
+-- Validate foreign key integrity (invalid product key check)
+SELECT *
+FROM sales_performance.silver_crm_sales_info s
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM sales_performance.silver_crm_prd_info p
+    WHERE p.prd_key = s.sls_prd_key
+);
+
+-- Mark invalid product key rows
+SELECT
+    s.sls_ord_num,
+    s.sls_prd_key,
+    s.sls_cust_id,
+    s.sls_order_dt,
+    s.sls_ship_dt,
+    s.sls_due_dt,
+    s.sls_sales,
+    s.sls_quantity,
+    s.sls_price,
+    CASE
+        WHEN EXISTS (
+            SELECT 1
+            FROM sales_performance.silver_crm_prd_info p
+            WHERE TRIM(UPPER(p.prd_key)) = TRIM(UPPER(s.sls_prd_key))
+        ) THEN 'VALID'
+        ELSE 'INVALID_PRODUCT_KEY'
+    END AS data_quality_flag
+FROM sales_performance.silver_crm_sales_info;
+
+-- Check unwanted spaces in order numbers
+SELECT sls_ord_num
+FROM sales_performance.silver_crm_sales_info
+WHERE sls_ord_num != TRIM(sls_ord_num);
+
+-- Validate date values (future or wrong sequence)
+SELECT *
+FROM sales_performance.silver_crm_sales_info
+WHERE sls_order_dt > sls_ship_dt OR sls_order_dt > sls_due_dt;
+
+-- Validate sales formula and fix invalid values
+SELECT DISTINCT 
+    sls_quantity,
+    CASE
+        WHEN sls_sales <= 0 
+             OR sls_sales IS NULL 
+             OR sls_sales != sls_quantity * ABS(sls_price)
+        THEN sls_quantity * ABS(sls_price)
+        ELSE sls_sales
+    END AS sls_sales,
+    CASE 
+        WHEN sls_price <= 0 
+             OR sls_price IS NULL
+        THEN ROUND(sls_sales / NULLIF(sls_quantity, 0))
+        ELSE ROUND(sls_price)
+    END AS sls_price
+FROM sales_performance.silver_crm_sales_info;
+
+
+/* ============================================================
+   👤 4️⃣ ERP CUSTOMER AZ12 – Quality Checks
+   ============================================================ */
+
+-- Validate and clean customer IDs
+SELECT *
+FROM sales_performance.bronze_erp_cust_az12
+WHERE cid LIKE 'NAS%';
+
+-- Check for invalid or future birthdates
+SELECT DISTINCT bdate
+FROM sales_performance.bronze_erp_cust_az12
+WHERE bdate > CURDATE();
+
+-- Standardize gender and date columns
+SELECT 
+    cid,
+    CASE 
+        WHEN bdate > CURDATE() THEN NULL
+        ELSE bdate
+    END AS bdate,
+    CASE 
+        WHEN UPPER(TRIM(gen)) IN ('F', 'FEMALE') THEN 'Female'
+        WHEN UPPER(TRIM(gen)) IN ('M', 'MALE') THEN 'Male'
+        ELSE 'n/a'
+    END AS gen
+FROM sales_performance.bronze_erp_cust_az12;
+
+
+/* ============================================================
+   🌍 5️⃣ ERP LOCATION A101 – Quality Checks
+   ============================================================ */
+
+-- Standardize country codes and names
+SELECT 
+    REPLACE(cid, '-', '') AS cid,
+    CASE 
+        WHEN TRIM(cntry) = 'DE' THEN 'Germany'
+        WHEN TRIM(cntry) IN ('US', 'USA') THEN 'United States'
+        WHEN TRIM(cntry) = '' OR cntry IS NULL THEN 'n/a'
+        ELSE cntry
+    END AS cntry
+FROM sales_performance.bronze_erp_loc_a101;
+
+-- Check distinct country values
+SELECT DISTINCT cntry
+FROM sales_performance.bronze_erp_loc_a101;
+
+
+/* ============================================================
+   🏭 6️⃣ ERP PRODUCT CATEGORY G1V2 – Quality Checks
+   ============================================================ */
+
+-- Identify unwanted spaces and inconsistent text fields
+SELECT *
+FROM sales_performance.bronze_erp_px_cat_g1v2
+WHERE cat != TRIM(cat)
+   OR subcat != TRIM(subcat)
+   OR maintenance != TRIM(maintenance);
+
+-- Review distinct maintenance flags
+SELECT DISTINCT maintenance
+FROM sales_performance.bronze_erp_px_cat_g1v2;
