@@ -1,0 +1,70 @@
+🥇 Gold Layer – Data Dictionary
+Overview
+
+The Gold Layer represents the business-level, analytics-ready data within the sales_performance Data Warehouse.
+It is designed to support advanced reporting, dashboarding, and analytical use cases by providing a clean, aggregated, and business-friendly schema.
+
+This layer integrates and transforms data from the Silver Layer into fact and dimension tables, enabling stakeholders to measure and analyze key business metrics effectively.
+
+Key Objectives
+
+📊 Deliver a single source of truth for enterprise reporting and analytics
+
+🧩 Provide dimensional models (Star Schema) for optimized querying
+
+📈 Enable KPI tracking and trend analysis across products, customers, and regions
+
+🕵️ Ensure high data quality, consistency, and interpretability
+
+🧩 Gold Layer Data Dictionary
+🧍‍♂️ Table: gold.dim_customer
+| **Column Name**   | **Data Type** | **Description**                                                                |
+| ----------------- | ------------- | ------------------------------------------------------------------------------ |
+| `customer_key`    | INT           | Surrogate key generated for each customer (primary key for this dimension).    |
+| `customer_id`     | INT           | Unique customer identifier from the CRM system.                                |
+| `customer_number` | VARCHAR(50)   | Business key or reference ID for the customer from CRM data.                   |
+| `first_name`      | VARCHAR(50)   | Customer’s first name.                                                         |
+| `last_name`       | VARCHAR(50)   | Customer’s last name.                                                          |
+| `country`         | VARCHAR(50)   | Customer’s country, derived from ERP location data.                            |
+| `marital_status`  | VARCHAR(50)   | Marital status of the customer.                                                |
+| `gender`          | VARCHAR(50)   | Gender of the customer, derived from CRM or ERP data (fallback logic applied). |
+| `birthdate`       | DATE          | Customer’s date of birth (from ERP).                                           |
+| `create_date`     | DATE          | The date the customer record was created in the CRM system.                    |
+
+
+🧠 Purpose:
+Provides a unified view of customer attributes across CRM and ERP systems, serving as a master customer reference for analytics and reporting.
+
+📦 Table: gold.dim_product
+| **Column Name**  | **Data Type** | **Description**                                                            |
+| ---------------- | ------------- | -------------------------------------------------------------------------- |
+| `product_key`    | INT           | Surrogate key generated for each product (primary key for this dimension). |
+| `product_id`     | INT           | Product ID from CRM system.                                                |
+| `product_number` | VARCHAR(50)   | Unique business product identifier or SKU.                                 |
+| `product_name`   | VARCHAR(100)  | Name of the product.                                                       |
+| `category_id`    | VARCHAR(50)   | Foreign key linking to ERP product category.                               |
+| `category`       | VARCHAR(50)   | Product category from ERP system.                                          |
+| `subcategory`    | VARCHAR(50)   | Subcategory to which the product belongs.                                  |
+| `maintenance`    | VARCHAR(50)   | Maintenance type or classification associated with the product.            |
+| `cost`           | DECIMAL(10,2) | Cost per unit of the product.                                              |
+| `product_line`   | VARCHAR(50)   | Product line or brand grouping.                                            |
+| `start_date`     | DATETIME      | Date the product became active or available for sale.                      |
+
+🧠 Purpose:
+Defines the business-level product details for analysis, combining CRM product metadata with ERP category hierarchy.
+
+💰 Table: gold.fact_sales
+| **Column Name** | **Data Type** | **Description**                                |
+| --------------- | ------------- | ---------------------------------------------- |
+| `order_number`  | VARCHAR(50)   | Unique identifier for the sales order.         |
+| `product_key`   | INT           | Foreign key reference to `gold.dim_product`.   |
+| `customer_key`  | INT           | Foreign key reference to `gold.dim_customer`.  |
+| `order_date`    | DATE          | Date when the sales order was placed.          |
+| `shipping_date` | DATE          | Date when the order was shipped.               |
+| `due_date`      | DATE          | Date when the payment or delivery was due.     |
+| `sales_amount`  | DECIMAL(12,2) | Total monetary value of the sales transaction. |
+| `quantity`      | INT           | Number of units sold in the order.             |
+| `price`         | DECIMAL(10,2) | Price per unit of the product sold.            |
+
+🧠 Purpose:
+Stores all transactional sales data in an analytics-ready format, enabling KPI tracking, profitability analysis, and trend visualization across customers and products.
